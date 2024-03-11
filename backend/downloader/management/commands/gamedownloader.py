@@ -48,7 +48,7 @@ class Command(BaseCommand):
             for match in matches:
                 game_id = match["game_id"]
                 if str(game_id) not in old_successful_downloads and str(game_id) not in old_unsuccessful_downloads:
-                    profile_id = match["players"][0]["profile_id"]  # Assuming the first player's profile_id
+                    profile_id = match["players"][0]["profile_id"]
                     game_file = self.download_game_file(game_id, profile_id)
                     if game_file:
                         # Save the game file

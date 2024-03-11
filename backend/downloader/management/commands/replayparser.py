@@ -21,7 +21,6 @@ class Command(BaseCommand):
 
                 # Extract the contents of the ZIP archive
                 with zipfile.ZipFile(input_file_path, 'r') as zip_ref:
-                    # Iterate over files in the ZIP archive
                     for extracted_file in zip_ref.namelist():
                         if extracted_file.endswith('.aoe2record'):
                             # Read the file directly from the archive

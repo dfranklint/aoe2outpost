@@ -54,14 +54,14 @@ class Command(BaseCommand):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, "a") as json_file:
             json.dump(data, json_file, indent=4)
-            json_file.write("\n")  # Add newline between each JSON object
+            json_file.write("\n")
 
     def handle(self, *args, **options):
         rank_total = self.fetch_rank_total()
         if rank_total is None:
             return
 
-        start_values = range(1, rank_total + 1, 200)  # Adjust range as needed
+        start_values = range(1, rank_total + 1, 200)
         all_extracted_data = []
 
         for start in start_values:
@@ -73,6 +73,5 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.ERROR(f"Failed to fetch data for start={start}"))
 
-        # Write all the extracted data to the JSON file
         self.save_to_json(all_extracted_data, "/home/chad/aoe2outpost/leaderboard/leaderboard.json")
         self.stdout.write(self.style.SUCCESS("All data saved to leaderboard.json"))
