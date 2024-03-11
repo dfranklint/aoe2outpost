@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches
+.cache/
+dist/
+
+# Logs
+*.log
+
+# Local development settings
+.env
+.env.local
+.env.*.local
+
+# Django static and media files
+/staticfiles/
+/media/
+
+# Vue.js build output
+/dist/
+/node_modules/
+npm-debug.log*
+
+# Editor-specific files
+.idea/
+.vscode/
+
+# Temporary files
+*.swp
+.DS_Store
+
+# Python virtual environment
+virtual/
+
+# Media files
+*.png
+*.ico
