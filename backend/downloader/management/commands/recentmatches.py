@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 import requests
 import json
 import os
+import datetime
 
 class Command(BaseCommand):
     help = 'Fetches recent matches for players within a specified rank range'
@@ -22,6 +23,7 @@ class Command(BaseCommand):
     def extract_game_data(self, match):
         if match.get("maxplayers") == 2 and match.get("description") == "AUTOMATCH":
             game_id = match.get("id")
+            start_time = match.get("startgametime")
             player_data = []
             for member in match.get("matchhistorymember", []):
                 player_data.append({
@@ -29,7 +31,7 @@ class Command(BaseCommand):
                     "race_id": member.get("race_id"),
                     "outcome": member.get("outcome")
                 })
-            return {"game_id": game_id, "players": player_data}
+            return {"game_id": game_id, "start_time": start_time, "players": player_data}
         else:
             return None
 

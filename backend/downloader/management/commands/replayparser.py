@@ -25,13 +25,18 @@ class Command(BaseCommand):
                         if extracted_file.endswith('.aoe2record'):
                             # Read the file directly from the archive
                             with zip_ref.open(extracted_file, 'r') as f:
-                                # Parse the match
-                                match = parse_match(f)
-                                serialized_data = serialize(match)
+                                try:
+                                    # Attempt to parse the match
+                                    match = parse_match(f)
+                                    serialized_data = serialize(match)
 
-                                # Save the serialized data to a JSON file in the output directory
-                                output_json_file_path = os.path.join(output_directory, f'{extracted_file}.json')
-                                with open(output_json_file_path, 'w') as json_file:
-                                    json.dump(serialized_data, json_file, indent=2)
+                                    # Save the serialized data to a JSON file in the output directory
+                                    output_json_file_path = os.path.join(output_directory, f'{extracted_file}.json')
+                                    with open(output_json_file_path, 'w') as json_file:
+                                        json.dump(serialized_data, json_file, indent=2)
 
-                                self.stdout.write(f"Processed {extracted_file}.")
+                                    self.stdout.write(f"Processed {extracted_file}.")
+                                except Exception as e:
+                                    # Log the error and continue to the next file
+                                    self.stderr.write(f"Error processing {extracted_file}: {str(e)}")
+                                    continue
