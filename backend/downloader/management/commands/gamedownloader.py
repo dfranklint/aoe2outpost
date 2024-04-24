@@ -1,75 +1,147 @@
 from django.core.management.base import BaseCommand
+from ...utils import get_db_handle
+from itertools import islice
+from downloader.models import Game
+from mgz.model import parse_match, serialize
+from pymongo import MongoClient
 import requests
 import json
 import os
+import datetime
+import time
+import io
+import zipfile
 
 class Command(BaseCommand):
     help = 'Download game files from API and update successful and unsuccessful downloads'
 
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 
-    def download_game_file(self, game_id, profile_id):
-        url = f"https://aoe.ms/replay/?gameId={game_id}&profileId={profile_id}"
-        headers = {'User-Agent': self.USER_AGENT}
-        self.stdout.write(f"Sending request to download game file for game_id={game_id}, profile_id={profile_id}")
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            self.stdout.write(f"Game file downloaded successfully for game_id={game_id}")
-        else:
-            self.stdout.write(f"Failed to download game file for game_id={game_id}. Status code: {response.status_code}")
-            # Log the content of the response
-            self.stdout.write(f"Response content: {response.content}")
+    def add_arguments(self, parser):
+        parser.add_argument('batch_size', type=int, help='batch size of players for each recentmatches api request')
+        parser.add_argument('oldest_age', type=int, help='the oldest age of game in hours to attempt to download')
 
-        return response.content if response.status_code == 200 else None
+
+    def download_game_file(self, game_id, creator_id):
+        url = f"https://aoe.ms/replay/?gameId={game_id}&profileId={creator_id}"
+        headers = {'User-Agent': self.USER_AGENT}
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            self.stdout.write(f"Failed to download game file for game_id={game_id}. Status code: {response.status_code}")
+            self.stdout.write(f"Response content: {response.content}")
+            return None, response.status_code
+        return response.content, response.status_code
+
+    def replay_parser(self, game_recording):
+        output_directory = '/home/chad/aoe2outpost/parsedfiles'
+        match = parse_match(game_recording)
+        serialized_data = serialize(match)
+        self.stdout.write(f"Processed.")
+        del serialized_data["gaia"]
+        del serialized_data["map"]
+        del serialized_data["inputs"]
+        return serialized_data
+
+    def decompress(self, game_file_compressed):
+        game_file_compressed_io = io.BytesIO(game_file_compressed)
+
+        with zipfile.ZipFile(game_file_compressed_io, 'r') as zip_ref:
+            decompressed = zip_ref.open(zip_ref.namelist()[0])
+        return decompressed
+
+    def insert_into_mongodb(self, game_id, json_dump, db_handle):
+        existing_document = db_handle.game_recordings.find_one({'_id': game_id})
+        if existing_document is not None:
+            print(f"Entry already exists in mongodb. Skipping.")
+            return 0
+        # Create the document to insert
+        document = {
+            '_id': game_id,
+            'data': json_dump
+        }
+        # Insert the document into the collection
+        db_handle.game_recordings.insert_one(document)
+        return 1
 
     def handle(self, *args, **options):
-        recent_matches_file = "/home/chad/aoe2outpost/recentmatches/recentmatches.json"
-        successful_downloads_file = "/home/chad/aoe2outpost/successfuldownloads.txt"
-        unsuccessful_downloads_file = "/home/chad/aoe2outpost/unsuccessfuldownloads.txt"
-        game_files_directory = "/home/chad/aoe2outpost/gamefiles/"
 
-        with open(recent_matches_file, "r") as f:
-            recent_matches_data = json.load(f)
+        start_epoch_time = int(time.time())
+        oldest_game = start_epoch_time - (3600 * int(options['oldest_age']))
 
-        old_successful_downloads = []
-        old_unsuccessful_downloads = []
-        new_successful_downloads = []
-        new_unsuccessful_downloads = []
-        downloads_unattempted = 0
+        # establish MongoDB connection
+        db_name = 'aoe2db'
+        host = 'localhost'
+        port = 27017
+        username = os.environ.get('MONGODB_USERNAME')
+        password = os.environ.get('MONGODB_PASSWORD')
+        db_handle, client = get_db_handle(db_name, host, port, username, password)
 
-        # Read game ids from successfuldownloads.txt and unsuccessfuldownloads.txt
-        with open(successful_downloads_file, "r") as f:
-            old_successful_downloads.extend(line.strip() for line in f)
+        batch_size = options['batch_size']
+        games_queryset = Game.objects.filter(downloaded=0, start_time__gt=oldest_game)
+        games_iterator = games_queryset.iterator()
+        batch_num = 0
+        failed_counter = 0
+        success_counter = 0
+        attempts_counter = 0
+        global_wait_time = 0
+        print(f"current time: {start_epoch_time}")
+        print(f"oldest game will be at time: {oldest_game}")
 
-        with open(unsuccessful_downloads_file, "r") as f:
-            old_unsuccessful_downloads.extend(line.strip() for line in f)
+        prev_iteration_epoch_time = start_epoch_time
+        while True:
+            iteration_start_epoch_time = time.time()
+            total_elapsed_epoch_time = iteration_start_epoch_time - start_epoch_time
+            iteration_elapsed_epoch_time = iteration_start_epoch_time - prev_iteration_epoch_time
+            batch = list(islice(games_iterator, batch_size))
+            print(f"batch: {batch_num}")
+            print(f"Total Attempts: {attempts_counter}")
+            print(f"Total Successes: {success_counter}")
+            print(f"Total Fails: {failed_counter}")
+            print(f"Prev iteration elapsed time: {iteration_elapsed_epoch_time}")
+            print(f"Total elapsed time: {total_elapsed_epoch_time}")
+            print(f"Total time spent waiting(429s): {global_wait_time}")
+            if not batch:
+                break
+            game_ids = [game.game_id for game in batch]
+            print(f"game_ids: {game_ids}\n")
+            batch_num += 1
+            for game in batch:
+                wait_time = 2
+                game_file_compressed, status_code = self.download_game_file(game.game_id, game.creator_profile_id)
+                while(wait_time < 17 and status_code == 429): # wait and retry 429 errors
+                    global_wait_time += wait_time
+                    time.sleep(wait_time)
+                    game_file_compressed, status_code = self.download_game_file(game.game_id, game.creator_profile_id)
+                    wait_time *= 2
+                if status_code is 403: # 403 error
+                    failed_counter += 1
+                    attempts_counter += 1
+                    game.downloaded = 4
+                    game.save(update_fields=['downloaded'])
+                    continue
+                if status_code is 429: # 429 error
+                    failed_counter += 1
+                    attempts_counter += 1
+                    game.downloaded = 3
+                    game.save(update_fields=['downloaded'])
+                    continue
+                if status_code is  404: # 404 error
+                    failed_counter += 1
+                    attempts_counter += 1
+                    game.downloaded = 2
+                    game.save(update_fields=['downloaded'])
+                    continue
+                if status_code is not 200: # other error
+                    failed_counter += 1
+                    attempts_counter += 1
+                    game.downloaded = 5
+                    game.save(update_fields=['downloaded'])
+                    continue
+                decompressed = self.decompress(game_file_compressed)
+                json_dump = self.replay_parser(decompressed)
+                success_counter += self.insert_into_mongodb(game.game_id, json_dump, db_handle)
+                attempts_counter += 1
+                game.downloaded = 1
+                game.save(update_fields=['downloaded'])
 
-        for profile_name, matches in recent_matches_data.items():
-            for match in matches:
-                game_id = match["game_id"]
-                if str(game_id) not in old_successful_downloads and str(game_id) not in old_unsuccessful_downloads:
-                    profile_id = match["players"][0]["profile_id"]
-                    game_file = self.download_game_file(game_id, profile_id)
-                    if game_file:
-                        # Save the game file
-                        file_path = os.path.join(game_files_directory, f"{game_id}.aoe2record.zip")
-                        with open(file_path, "wb") as game_file_handle:
-                            game_file_handle.write(game_file)
-                        new_successful_downloads.append(str(game_id))
-                    else:
-                        new_unsuccessful_downloads.append(str(game_id))
-                else:
-                    downloads_unattempted += 1
-                    self.stdout.write(f"Request not sent for game_id {game_id}.")
-
-        # Update successful downloads file
-        with open(successful_downloads_file, "a") as f:
-            f.write("\n".join(new_successful_downloads))
-
-        # Update unsuccessful downloads file
-        with open(unsuccessful_downloads_file, "a") as f:
-            f.write("\n".join(new_unsuccessful_downloads))
-
-        self.stdout.write(f"Downloaded {len(new_successful_downloads)} game files successfully.")
-        self.stdout.write(f"Failed to download {len(new_unsuccessful_downloads)} game files.")
-        self.stdout.write(f"{downloads_unattempted} downloads not attempted.")
+            prev_iteration_epoch_time = iteration_start_epoch_time

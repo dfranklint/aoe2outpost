@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -75,14 +76,27 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'mariadb_aoe2db',
+        'USER': os.environ.get('MYSQL_AOE2DB_USERNAME'),
+        'PASSWORD': os.environ.get('MYSQL_AOE2DB_PASSWORD'),
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
+    },
+    'djongo': {
         'ENGINE': 'djongo',
-        'NAME': 'aoe2db',
+        'NAME': 'djongo_aoe2db',
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
             'host': 'localhost',
             'port': 27017,
+            'username': os.environ.get('MONGODB_USERNAME'),
+            'password': os.environ.get('MONGODB_PASSWORD'),
         }
-    }
+    },
 }
 
 
