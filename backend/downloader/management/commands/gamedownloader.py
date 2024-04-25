@@ -18,7 +18,7 @@ class Command(BaseCommand):
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 
     def add_arguments(self, parser):
-        parser.add_argument('batch_size', type=int, help='batch size of players for each recentmatches api request')
+        parser.add_argument('batch_size', type=int, help='batch size of games pulled from MariaDB to download')
         parser.add_argument('oldest_age', type=int, help='the oldest age of game in hours to attempt to download')
 
 
@@ -137,8 +137,16 @@ class Command(BaseCommand):
                     game.downloaded = 5
                     game.save(update_fields=['downloaded'])
                     continue
-                decompressed = self.decompress(game_file_compressed)
-                json_dump = self.replay_parser(decompressed)
+                try:
+                    decompressed = self.decompress(game_file_compressed)
+                    json_dump = self.replay_parser(decompressed)
+                except Exception as e:
+                    print(f"Error processing game {game.game_id}: {e}")
+                    failed_counter += 1
+                    attempts_counter += 1
+                    game.downloaded = 6  # Downloaded but runtime error while processing
+                    game.save(update_fields=['downloaded'])
+                    continue
                 success_counter += self.insert_into_mongodb(game.game_id, json_dump, db_handle)
                 attempts_counter += 1
                 game.downloaded = 1
