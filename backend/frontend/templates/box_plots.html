@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Box Plots{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto">
+        <form id="filterForm" hx-post="{% url 'box_plots' %}" hx-trigger="submit" hx-target="#responseContainer" class="mt-8 space-y-4">
+            <!-- Include the CSRF token -->
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Input for minimum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="minElo" class="block text-sm font-medium text-gray-700">Minimum Elo:</label>
+                    <input type="number" id="minElo" name="min_elo" min="0" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for maximum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="maxElo" class="block text-sm font-medium text-gray-700">Maximum Elo:</label>
+                    <input type="number" id="maxElo" name="max_elo" min="0" value="2000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for number of bins -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="numBins" class="block text-sm font-medium text-gray-700">Number of Bins:</label>
+                    <input type="number" id="numBins" name="num_bins" min="1" value="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Dropdown menu for selecting "techs" -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="tech" class="block text-sm font-medium text-gray-700">Tech:</label>
+                    <select id="tech" name="tech" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="feudal_age_timing">Feudal Age</option>
+                        <option value="castle_age_timing">Castle Age</option>
+                        <option value="imperial_age_timing">Imperial Age</option>
+                        <option value="loom_timing">Loom</option>
+                        <option value="town_watch_timing">Town Watch</option>
+                        <option value="wheelbarrow_timing">Wheelbarrow</option>
+                        <option value="hand_cart_timing">Hand Cart</option>
+                        <option value="double_bit_axe_timing">Double-Bit Axe</option>
+                        <option value="bow_saw_timing">Bow Saw</option>
+                        <option value="horse_collar_timing">Horse Collar</option>
+                        <option value="heavy_plow_timing">Heavy Plow</option>
+                        <option value="crop_rotation_timing">Crop Rotation</option>
+                        <option value="two_man_saw_timing">Two Man Saw</option>
+                        <option value="gold_mining_timing">Gold Mining</option>
+                        <option value="gold_shaft_mining_timing">Gold Shaft Mining</option>
+                        <option value="stone_mining_timing">Stone Mining</option>
+                        <option value="stone_shaft_mining_timing">Stone Shaft Mining</option>
+                        <option value="gillnets_timing">Gillnets</option>
+                        <option value="herbal_medicine_timing">Herbal Medicine</option>
+                        <!-- Add more options as needed -->
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Submit</button>
+        </form>
+
+        <div id="myChart" class="mt-8">
+            <!-- This will be replaced by the chart -->
+        </div>
+
+        <div id="responseContainer" style="display: none;"></div>
+
+    </div>
+
+    <script>
+        // Function to update the chart
+        function updateChart(data) {
+            console.log("updating chart with data")
+            var plotData = [];
+            for (var i = 0; i < data.labels.length; i++) {
+                var trace = {
+                    y: [
+                        data.p10s[i],
+                        data.p25s[i],
+                        data.medians[i],
+                        data.p75s[i],
+                        data.p90s[i]
+                    ],
+                    type: 'box',
+                    name: data.labels[i]
+                };
+                plotData.push(trace);
+            }
+
+            var layout = {
+                title: data.tech + ' Across Elos',
+                yaxis: {
+                    title: 'Timing (Seconds)'
+                },
+                xaxis: {
+                    title: 'Elo Range'
+                },
+                height: 600
+            };
+
+            Plotly.newPlot('myChart', plotData, layout);
+        }
+
+        // Event listener for after request completion
+        document.addEventListener("htmx:afterRequest", function(event) {
+            if (event.detail.xhr.responseURL.includes("{% url 'box_plots' %}")) {
+                updateChart(JSON.parse(event.detail.xhr.responseText));
+            }
+        });
+    </script>
+{% endblock %}

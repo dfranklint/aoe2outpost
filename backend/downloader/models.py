@@ -32,7 +32,8 @@ class Game(models.Model):
         (2, '404 Not Found'),
         (3, '429 Rate Limited'),
         (4, '403 Refused Request'),
-        (5, 'other error')
+        (5, 'other error'),
+        (6, 'Runtime error')
     ]
     downloaded = models.CharField(max_length=12, choices=downloaded_as_int)
 
@@ -49,9 +50,32 @@ class GamePlayer(models.Model):
 class GamePlayerMetadata(models.Model):
     game_id = models.IntegerField()
     profile_id = models.IntegerField()
+    data_version = models.SmallIntegerField(null=True)
+    rating = models.SmallIntegerField(null=True)
+    winner = models.BooleanField(null=True)
+    prefer_random = models.BooleanField(null=True)
+    civilization = models.TextField(null=True)
+    eapm = models.SmallIntegerField(null=True)
+
     loom_timing = models.DurationField(null=True)
     wheelbarrow_timing = models.DurationField(null=True)
-    data_version = models.SmallIntegerField(null=True)
+    hand_cart_timing = models.DurationField(null=True)
+    double_bit_axe_timing = models.DurationField(null=True)
+    bow_saw_timing = models.DurationField(null=True)
+    two_man_saw_timing = models.DurationField(null=True)
+    gillnets_timing = models.DurationField(null=True)
+    feudal_age_timing = models.DurationField(null=True)
+    castle_age_timing = models.DurationField(null=True)
+    imperial_age_timing = models.DurationField(null=True)
+    gold_mining_timing = models.DurationField(null=True)
+    gold_shaft_mining_timing = models.DurationField(null=True)
+    horse_collar_timing = models.DurationField(null=True)
+    heavy_plow_timing = models.DurationField(null=True)
+    crop_rotation_timing = models.DurationField(null=True)
+    stone_mining_timing = models.DurationField(null=True)
+    stone_shaft_mining_timing = models.DurationField(null=True)
+    town_watch_timing = models.DurationField(null=True)
+    herbal_medicine_timing = models.DurationField(null=True)
 
     class Meta:
         unique_together = ['game_id', 'profile_id']

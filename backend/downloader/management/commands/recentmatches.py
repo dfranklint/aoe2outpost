@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from downloader.models import Player, Game, GamePlayer, GamePlayerMetadata
+from downloader.models import Player, Game, GamePlayer
 from itertools import islice
 import requests
 import json
@@ -62,7 +62,6 @@ class Command(BaseCommand):
                 profile_id = player.get("profile_id")
                 game_player, game_player_created = GamePlayer.objects.get_or_create(game_id=game_id, profile_id=profile_id)
                 if game_player_created:
-                    game_player_meta, game_player_meta_created = GamePlayerMetadata.get_or_create(game_id=game_id, profile_id=profile_id)
                     print("New game player created.")
                     game_player.game_id = game_id
                     game_player.profile_id = profile_id

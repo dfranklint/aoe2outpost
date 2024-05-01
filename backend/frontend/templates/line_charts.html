@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Line Charts{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto">
+        <form id="filterForm" hx-post="{% url 'line_charts' %}" hx-trigger="submit" hx-target="#responseContainer" class="mt-8 space-y-4">
+            <!-- Include the CSRF token -->
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Input for minimum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="minElo" class="block text-sm font-medium text-gray-700">Minimum Elo:</label>
+                    <input type="number" id="minElo" name="min_elo" min="0" value="1000"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for maximum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="maxElo" class="block text-sm font-medium text-gray-700">Maximum Elo:</label>
+                    <input type="number" id="maxElo" name="max_elo" min="0" value="2000"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for number of lines -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="numLines" class="block text-sm font-medium text-gray-700">Number of Lines:</label>
+                    <input type="number" id="numLines" name="num_lines" min="1" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for maximum duration -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="maxDurationHours" class="block text-sm font-medium text-gray-700">Maximum Duration Hours:</label>
+                    <input type="number" id="maxDurationHours" name="max_duration_hours" min="0" value="2"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="maxDurationMinutes" class="block text-sm font-medium text-gray-700">Maximum Duration Minutes:</label>
+                    <input type="number" id="maxDurationMinutes" name="max_duration_minutes" min="0" value="0"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for minimum duration -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="minDurationSeconds" class="block text-sm font-medium text-gray-700">Minimum Duration Seconds:</label>
+                    <input type="number" id="minDurationSeconds" name="min_duration_seconds" min="0" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for intervals -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="intervalsMinutes" class="block text-sm font-medium text-gray-700">Intervals Minutes:</label>
+                    <input type="number" id="intervalsMinutes" name="intervals_minutes" min="0" value="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="intervalsSeconds" class="block text-sm font-medium text-gray-700">Intervals Seconds:</label>
+                    <input type="number" id="intervalsSeconds" name="intervals_seconds" min="0" value="0"class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Dropdown menu for selecting "techs" -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="tech" class="block text-sm font-medium text-gray-700">Tech:</label>
+                    <select id="tech" name="tech" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="feudal_age_timing">Feudal Age</option>
+                        <option value="castle_age_timing">Castle Age</option>
+                        <option value="imperial_age_timing">Imperial Age</option>
+                        <option value="loom_timing">Loom</option>
+                        <option value="town_watch_timing">Town Watch</option>
+                        <option value="wheelbarrow_timing">Wheelbarrow</option>
+                        <option value="hand_cart_timing">Hand Cart</option>
+                        <option value="double_bit_axe_timing">Double-Bit Axe</option>
+                        <option value="bow_saw_timing">Bow Saw</option>
+                        <option value="horse_collar_timing">Horse Collar</option>
+                        <option value="heavy_plow_timing">Heavy Plow</option>
+                        <option value="crop_rotation_timing">Crop Rotation</option>
+                        <option value="two_man_saw_timing">Two Man Saw</option>
+                        <option value="gold_mining_timing">Gold Mining</option>
+                        <option value="gold_shaft_mining_timing">Gold Shaft Mining</option>
+                        <option value="stone_mining_timing">Stone Mining</option>
+                        <option value="stone_shaft_mining_timing">Stone Shaft Mining</option>
+                        <option value="gillnets_timing">Gillnets</option>
+                        <option value="herbal_medicine_timing">Herbal Medicine</option>
+
+                        <!-- Add more options as needed -->
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Submit</button>
+        </form>
+
+        <div id="myChart" class="mt-8">
+            <!-- This will be replaced by the chart -->
+        </div>
+
+        <div id="responseContainer" style="display: none;"></div>
+
+    </div>
+
+    <script>
+        // Function to update the chart
+        function updateChart(data) {
+            // Extract labels, lines, and intervals data from the response
+            const intervals = data.intervals;
+            const labels = data.labels;
+            const lines = data.lines;
+
+            // Create traces for each line
+            const traces = lines.map((line, index) => ({
+                x: intervals,
+                y: line,
+                mode: 'lines',
+                name: labels[index]
+            }));
+
+            // Layout configuration
+            const layout = {
+                title: data.tech + ' Over Time',
+                xaxis: { title: 'Time (seconds)' },
+                yaxis: { title: 'Percentage Researched' },
+                height: 900
+
+            };
+
+            // Plot the chart
+            Plotly.newPlot('myChart', traces, layout);
+        }
+
+        // Event listener for after request completion
+        document.addEventListener("htmx:afterRequest", function(event) {
+            if (event.detail.xhr.responseURL.includes("{% url 'line_charts' %}")) {
+                updateChart(JSON.parse(event.detail.xhr.responseText));
+            }
+        });
+    </script>
+
+{% endblock %}

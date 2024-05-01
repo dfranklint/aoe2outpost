@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Scatter Plots{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto">
+        <form id="filterForm" hx-post="{% url 'scatter_plots' %}" hx-trigger="submit" hx-target="#responseContainer" class="mt-8 space-y-4">
+            <!-- Include the CSRF token -->
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <!-- Input for minimum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="minElo" class="block text-sm font-medium text-gray-700">Minimum Elo:</label>
+                    <input type="number" id="minElo" name="min_elo" min="0" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for maximum "elo" value -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="maxElo" class="block text-sm font-medium text-gray-700">Maximum Elo:</label>
+                    <input type="number" id="maxElo" name="max_elo" min="0" value="2000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Input for number of datapoints -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="numPoints" class="block text-sm font-medium text-gray-700">Number of Datapoints:</label>
+                    <input type="number" id="numPoints" name="num_points" min="1" value="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+
+                <!-- Dropdown menu for selecting "tech 1" -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="tech1" class="block text-sm font-medium text-gray-700">Tech 1:</label>
+                    <select id="tech1" name="tech1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="rating">ELO</option>
+                        <option value="eapm">EAPM</option>
+                        <option value="feudal_age_timing">Feudal Age</option>
+                        <option value="castle_age_timing">Castle Age</option>
+                        <option value="imperial_age_timing">Imperial Age</option>
+                        <option value="loom_timing">Loom</option>
+                        <option value="town_watch_timing">Town Watch</option>
+                        <option value="wheelbarrow_timing">Wheelbarrow</option>
+                        <option value="hand_cart_timing">Hand Cart</option>
+                        <option value="double_bit_axe_timing">Double-Bit Axe</option>
+                        <option value="bow_saw_timing">Bow Saw</option>
+                        <option value="horse_collar_timing">Horse Collar</option>
+                        <option value="heavy_plow_timing">Heavy Plow</option>
+                        <option value="crop_rotation_timing">Crop Rotation</option>
+                        <option value="two_man_saw_timing">Two Man Saw</option>
+                        <option value="gold_mining_timing">Gold Mining</option>
+                        <option value="gold_shaft_mining_timing">Gold Shaft Mining</option>
+                        <option value="stone_mining_timing">Stone Mining</option>
+                        <option value="stone_shaft_mining_timing">Stone Shaft Mining</option>
+                        <option value="gillnets_timing">Gillnets</option>
+                        <option value="herbal_medicine_timing">Herbal Medicine</option>
+                        <!-- Add more options as needed -->
+                    </select>
+                </div>
+                <!-- Dropdown menu for selecting "tech 2" -->
+                <div class="bg-gray-400 p-4 rounded-md">
+                    <label for="tech2" class="block text-sm font-medium text-gray-700">Tech 2:</label>
+                    <select id="tech2" name="tech2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="rating">ELO</option>
+                        <option value="eapm">EAPM</option>
+                        <option value="feudal_age_timing">Feudal Age</option>
+                        <option value="castle_age_timing">Castle Age</option>
+                        <option value="imperial_age_timing">Imperial Age</option>
+                        <option value="loom_timing">Loom</option>
+                        <option value="town_watch_timing">Town Watch</option>
+                        <option value="wheelbarrow_timing">Wheelbarrow</option>
+                        <option value="hand_cart_timing">Hand Cart</option>
+                        <option value="double_bit_axe_timing">Double-Bit Axe</option>
+                        <option value="bow_saw_timing">Bow Saw</option>
+                        <option value="horse_collar_timing">Horse Collar</option>
+                        <option value="heavy_plow_timing">Heavy Plow</option>
+                        <option value="crop_rotation_timing">Crop Rotation</option>
+                        <option value="two_man_saw_timing">Two Man Saw</option>
+                        <option value="gold_mining_timing">Gold Mining</option>
+                        <option value="gold_shaft_mining_timing">Gold Shaft Mining</option>
+                        <option value="stone_mining_timing">Stone Mining</option>
+                        <option value="stone_shaft_mining_timing">Stone Shaft Mining</option>
+                        <option value="gillnets_timing">Gillnets</option>
+                        <option value="herbal_medicine_timing">Herbal Medicine</option>
+                        <!-- Add more options as needed -->
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Submit</button>
+        </form>
+
+        <div id="myChart" class="mt-8">
+            <!-- This will be replaced by the chart -->
+        </div>
+
+        <div id="responseContainer" style="display: none;"></div>
+
+    </div>
+
+    <script>
+        // Function to update the chart
+        function updateChart(data) {
+            // Extract data points from the response
+            const dataPoints = data.data_points;
+
+            // Extract tech1 and tech2 values from data points
+            const tech1Values = dataPoints.map(point => point.tech1);
+            const tech2Values = dataPoints.map(point => point.tech2);
+
+            // Create trace for scatter plot
+            const trace = {
+                x: tech1Values,
+                y: tech2Values,
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Tech 1 vs Tech 2'
+            };
+
+            // Layout configuration
+            const layout = {
+                title: data.title,
+                xaxis: { title: data.x_label},
+                yaxis: { title: data.y_label},
+                height: 600
+            };
+
+            // Plot the chart
+            Plotly.newPlot('myChart', [trace], layout);
+        }
+
+        // Event listener for after request completion
+        document.addEventListener("htmx:afterRequest", function(event) {
+            if (event.detail.xhr.responseURL.includes("{% url 'scatter_plots' %}")) {
+                updateChart(JSON.parse(event.detail.xhr.responseText));
+            }
+        });
+    </script>
+
+{% endblock %}

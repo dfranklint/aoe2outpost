@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Title{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.31.1.min.js" charset="utf-8"></script>
+    <script src="https://unpkg.com/htmx.org@1.6.1/dist/htmx.js"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Banner -->
+    <div id="banner" class="bg-gray-800 text-white py-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Aoe2 Outpost</h1>
+            <nav>
+                <ul class="flex">
+                    <li><a href="{% url 'box_plots' %}" class="mx-2">Box Plots</a></li>
+                    <li><a href="{% url 'line_charts' %}" class="mx-2">Line Charts</a></li>
+                    <li><a href="{% url 'scatter_plots' %}" class="mx-2">Scatter Plots</a></li>
+
+                    <!-- Add more links as needed -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div id="content" class="container mx-auto bg-gray-100">
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html>
