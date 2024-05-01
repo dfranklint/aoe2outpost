@@ -86,13 +86,17 @@ def line_charts(request):
         max_duration_minutes = int(request.POST.get('max_duration_minutes') or '0')
         intervals_minutes = int(request.POST.get('intervals_minutes') or '0')
         intervals_seconds = int(request.POST.get('intervals_seconds') or '0')
-        minimum_duration_seconds = int(request.POST.get('min_duration_seconds') or '0')  # Add this line
+        min_duration_minutes = int(request.POST.get('min_duration_minutes') or '0')
+        min_duration_seconds = int(request.POST.get('min_duration_seconds') or '0')
+
 
         tech_field_name = f"{tech}"
 
         # Convert intervals and max duration to seconds
         max_duration_seconds = max_duration_hours * 3600 + max_duration_minutes * 60
         intervals_seconds = intervals_minutes * 60 + intervals_seconds
+
+        minimum_duration_seconds = min_duration_minutes * 60 + min_duration_seconds
 
         intervals = []
         for interval in range(minimum_duration_seconds, max_duration_seconds + 1, intervals_seconds): # for each time interval
